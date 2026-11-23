@@ -719,7 +719,7 @@
 <!-- شاشة لوحة الشرف بالصورة -->
 <div id="modal-honor-board" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/95 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300 p-2 sm:p-4">
     <!-- عشان نصور المربع ده بس -->
-    <div id="honor-capture-area" class="relative w-full max-w-2xl aspect-square bg-black rounded-xl sm:rounded-3xl overflow-hidden shadow-[0_0_40px_rgba(245,158,11,0.3)] border-2 border-yellow-500/50 mx-auto">
+    <div id="honor-capture-area" class="relative w-full max-w-2xl bg-black rounded-xl sm:rounded-3xl overflow-hidden shadow-[0_0_40px_rgba(245,158,11,0.3)] border-2 border-yellow-500/50 mx-auto">
         
         <!-- زرار الإغلاق -->
         <button id="honor-close-btn" onclick="closeHonorBoard()" class="absolute top-2 right-2 sm:top-4 sm:right-4 w-10 h-10 flex items-center justify-center rounded-full bg-slate-900/80 text-white hover:bg-red-600 transition-colors z-50 border border-yellow-500/50">
@@ -731,8 +731,8 @@
             <i class="fa-solid fa-download text-xl"></i>
         </button>
 
-        <!-- صورة الغلاف الثابتة (مع تصريح التحميل crossorigin) -->
-<img src="https://i.postimg.cc/B6L69g8F/tlb-tzwyd-balns-lltrjmt-2K-20261006195442.jpg">
+        <!-- صورة الغلاف الثابتة -->
+        <img src="https://i.postimg.cc/B6L69g8F/tlb-tzwyd-balns-lltrjmt-2K-20261006195442.jpg" class="w-full h-auto block">
 
         <!-- المركز الأول (في النص) -->
         <div id="honor-name-1" class="absolute w-[22%] text-center text-white font-bold drop-shadow-md text-[2.0vw] sm:text-sm md:text-base" style="top: 81.5%; left: 50%; transform: translate(-50%, -50%);">
@@ -2092,10 +2092,34 @@ async function applyAll7TypesPoints(btn) {
         if(typeof showToast === 'function') showToast('لم يتم العثور على أسئلة لتعديلها.', 'fa-circle-info');
     }
 }
+// === لوحة التحكم الموحدة لأماكن الأسماء (بتظبط العرض والتحميل مع بعض) ===
+// x: يمين وشمال (زود الرقم يروح يمين - قلله يروح شمال)
+// y: فوق وتحت (زود الرقم ينزل تحت - قلله يطلع فوق)
+const HONOR_POS = {
+    first:  { x: 50,   y: 82 }, // المركز الأول (في النص)
+    second: { x: 81.5, y: 83 }, // المركز الثاني (يمين الصورة)
+    third:  { x: 18.5, y: 83 }  // المركز الثالث (يسار الصورة)
+};
+
 function openHonorBoard() {
-    document.getElementById('honor-name-1').innerText = DB.config.honor1 || '';
-    document.getElementById('honor-name-2').innerText = DB.config.honor2 || '';
-    document.getElementById('honor-name-3').innerText = DB.config.honor3 || '';
+    const el1 = document.getElementById('honor-name-1');
+    const el2 = document.getElementById('honor-name-2');
+    const el3 = document.getElementById('honor-name-3');
+
+    el1.innerText = DB.config.honor1 || '';
+    el2.innerText = DB.config.honor2 || '';
+    el3.innerText = DB.config.honor3 || '';
+
+    // تطبيق نفس الإحداثيات على العرض تلقائياً
+    el1.style.left = HONOR_POS.first.x + '%';
+    el1.style.top  = HONOR_POS.first.y + '%';
+
+    el2.style.left = HONOR_POS.second.x + '%';
+    el2.style.top  = HONOR_POS.second.y + '%';
+
+    el3.style.left = HONOR_POS.third.x + '%';
+    el3.style.top  = HONOR_POS.third.y + '%';
+
     const modal = document.getElementById('modal-honor-board');
     modal.classList.remove('hidden');
     setTimeout(() => modal.classList.remove('opacity-0'), 10);
@@ -2106,10 +2130,11 @@ function closeHonorBoard() {
     modal.classList.add('opacity-0');
     setTimeout(() => modal.classList.add('hidden'), 300);
 }
+
 function downloadHonorBoard() {
     const name1 = document.getElementById('honor-name-1').innerText || '';
-    const name2 = document.getElementById('honor-name-3').innerText || '';
-    const name3 = document.getElementById('honor-name-2').innerText || '';
+    const name2 = document.getElementById('honor-name-2').innerText || '';
+    const name3 = document.getElementById('honor-name-3').innerText || '';
     
     const imageUrl = "https://i.postimg.cc/B6L69g8F/tlb-tzwyd-balns-lltrjmt-2K-20261006195442.jpg";
     const downloadBtn = document.getElementById('honor-download-btn');
@@ -2141,18 +2166,15 @@ function downloadHonorBoard() {
         const w = canvas.width;
         const h = canvas.height;
 
-        // دالة ذكية: لو الاسم قصير يكتبه في سطر واحد بحجم كبير، لو طويل يقسمه لسطرين
         function drawSmartText(text, x, y, maxAllowedWidth, defaultSize) {
             ctx.font = `bold ${defaultSize}px 'Cairo', sans-serif`;
             let metrics = ctx.measureText(text);
 
-            // لو الاسم الصغير أو المتوسط كفاية على سطر واحد بالمقاس الكبير
             if (metrics.width <= maxAllowedWidth) {
                 ctx.fillText(text, x, y);
                 return;
             }
 
-            // لو الاسم طويل فعلاً ومش هيدخل في سطر واحد، نقسمه لسطرين بذكاء
             const words = text.split(' ');
             let lines = [];
             let currentLine = words[0];
@@ -2176,12 +2198,10 @@ function downloadHonorBoard() {
             }
         }
 
-        // المركز الأول (لو قصير يظهر سطر واحد بحجم 26، لو طويل يتقسم لسطرين بذكاء)
-        drawSmartText(name1, w * 0.50, h * 0.82, 400, 24);
-
-        // المركز الثاني والثالث
-        drawSmartText(name2, w * 0.185, h * 0.83, 300, 22);
-        drawSmartText(name3, w * 0.815, h * 0.83, 300, 22);
+        // تطبيق نفس الإحداثيات على التحميل تلقائياً
+        drawSmartText(name1, w * (HONOR_POS.first.x / 100),  h * (HONOR_POS.first.y / 100),  400, 24);
+        drawSmartText(name2, w * (HONOR_POS.second.x / 100), h * (HONOR_POS.second.y / 100), 300, 22);
+        drawSmartText(name3, w * (HONOR_POS.third.x / 100),  h * (HONOR_POS.third.y / 100),  300, 22);
 
         const link = document.createElement('a');
         link.download = `لوحة_شرف_الأبطال_${name1}.jpg`;
